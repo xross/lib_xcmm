@@ -1,0 +1,3 @@
+[submodule "lib_xcmm/src/XCMinusMinus"]
+	path = lib_xcmm/src/XCMinusMinus
+	url = git@github0.xmos.com:jackmccrea/XCMinusMinus.git
