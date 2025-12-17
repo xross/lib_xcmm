@@ -104,3 +104,5 @@ set(LIB_XC_SRCS "")
 set(LIB_CXX_SRCS "")
 
 XMOS_REGISTER_MODULE()
+
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/xcmm_codegen.cmake)
