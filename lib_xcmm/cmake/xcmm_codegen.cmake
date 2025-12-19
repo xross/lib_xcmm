@@ -120,3 +120,37 @@ function(xcmm_generate_rpc_stubs)
     # Add include directory to the target
     target_include_directories(${XCMM_STUB_TARGET} INTERFACE ${XCMM_STUB_OUT_DIR})
 endfunction()
+
+# Wrapper function to generate both JSONs and RPC stubs
+function(xcmm_generate_interface)
+    set(options)
+    set(oneValueArgs TARGET SEARCH_DIR STUB_OUT_DIR)
+    set(multiValueArgs)
+    cmake_parse_arguments(XCMM_INT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    if(NOT XCMM_INT_TARGET)
+        message(FATAL_ERROR "xcmm_generate_interface: TARGET argument is required")
+    endif()
+
+    if(NOT XCMM_RPC_GEN_SCRIPT)
+        set(XCMM_RPC_GEN_SCRIPT ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../src/XCMinusMinus/genx/rpcgen.py)
+    endif()
+    
+    if(NOT XCMM_TD_INCLUDE_DIR)
+        set(XCMM_TD_INCLUDE_DIR ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../src/XCMinusMinus/support/include)
+    endif()
+
+    # 1. Generate JSONs from .td files
+    xcmm_generate_jsons_from_td(
+        TARGET ${XCMM_INT_TARGET}
+        SEARCH_DIR ${XCMM_INT_SEARCH_DIR}
+        INCLUDE_DIRS ${XCMM_TD_INCLUDE_DIR}
+    )
+
+    # 2. Generate RPC stubs from JSONs
+    xcmm_generate_rpc_stubs(
+        TARGET ${XCMM_INT_TARGET}
+        GEN_SCRIPT ${XCMM_RPC_GEN_SCRIPT}
+        OUT_DIR ${XCMM_INT_STUB_OUT_DIR}
+    )
+endfunction()
