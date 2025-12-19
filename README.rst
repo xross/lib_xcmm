@@ -8,7 +8,7 @@ lib_xcmm: XCMinusMinus library
 :vendor: XMOS
 :version: 0.0.0
 :scope: Demo
-:description: Library wrapper for prototype XC-- language features
+:description: Library wrapper for prototype XC language features for C
 :category: Core & system
 :keywords:
 :devices: xcore.ai
@@ -17,8 +17,8 @@ lib_xcmm: XCMinusMinus library
 Summary
 *******
 
-A standard library wrapper for prototype XC replacement features. Provided to allow easier
-evaluaiton by current XC users.
+A standard library wrapper for prototype XC replacement features for C. Provided to allow easier
+evaluation by current XC users.
 
 ********
 Features
@@ -48,8 +48,7 @@ Required tools
 Required libraries (dependencies)
 *********************************
 
-* `lib_logging <https://www.xmos.com/libraries/lib_logging>`_ (https://www.xmos.com/libraries/lib_logging)
-* `lib_xassert <https://www.xmos.com/libraries/lib_xassert>`_ (https://www.xmos.com/libraries/lib_xassert)
+* None
 
 *************************
 Related application notes
@@ -62,6 +61,5 @@ Support
 *******
 
 This package is supported by XMOS Ltd. Issues can be raised against the software at
-`www.xmos.com/support <https://www.xmos.com/support>`_ or using GitHub `issues <https://github.com/xmos/lib_template/issues>`_.
+`www.xmos.com/support <https://www.xmos.com/support>`_ or using GitHub `issues <https://github.com/xmos/lib_xcmm/issues>`_.
 
-lib wrapper for prototype XC replacement

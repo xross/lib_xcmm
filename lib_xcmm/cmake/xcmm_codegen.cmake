@@ -1,3 +1,7 @@
+# Determine and cache the library root directory relative to this file
+get_filename_component(XCMM_ABS_ROOT "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
+set(XCMM_ROOT_DIR "${XCMM_ABS_ROOT}" CACHE INTERNAL "XCMM Library Root")
+
 # Function to generate JSONs from TD files
 function(xcmm_generate_jsons_from_td)
     # Parse arguments
@@ -26,12 +30,12 @@ function(xcmm_generate_jsons_from_td)
 
     # Discover all .td files
     file(GLOB TD_FILES "${XCMM_GEN_SEARCH_DIR}/*.td")
-    
+
     # Reconfigure when .td set changes
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${XCMM_GEN_SEARCH_DIR}/*.td")
 
     set(GENERATED_JSONS "")
-    
+
     # Prepare include flags
     set(INCLUDE_FLAGS "")
     foreach(INC_DIR ${XCMM_GEN_INCLUDE_DIRS})
@@ -41,7 +45,7 @@ function(xcmm_generate_jsons_from_td)
     foreach(TD_FILE ${TD_FILES})
         get_filename_component(TD_NAME ${TD_FILE} NAME_WE)
         set(JSON_FILE ${XCMM_GEN_OUT_DIR}/${TD_NAME}.json)
-        
+
         add_custom_command(
             OUTPUT ${JSON_FILE}
             COMMAND ${LLVM_TBLGEN_EXECUTABLE}
@@ -94,7 +98,7 @@ function(xcmm_generate_rpc_stubs)
         get_filename_component(JSON_NAME ${JSON_FILE} NAME_WE)
         set(OUT_H ${XCMM_STUB_OUT_DIR}/${JSON_NAME}_gen.h)
         set(OUT_C ${XCMM_STUB_OUT_DIR}/${JSON_NAME}_gen.inc.c)
-        
+
         add_custom_command(
             OUTPUT ${OUT_H} ${OUT_C}
             COMMAND ${XCMM_STUB_GEN_SCRIPT}
@@ -111,7 +115,7 @@ function(xcmm_generate_rpc_stubs)
     # Create a specific codegen target for this call to ensure stubs are generated
     # before the dependent target is built.
     set(CODEGEN_TARGET_NAME ${XCMM_STUB_TARGET}_codegen)
-    
+
     if(NOT TARGET ${CODEGEN_TARGET_NAME})
         add_custom_target(${CODEGEN_TARGET_NAME} DEPENDS ${GENERATED_STUBS})
         add_dependencies(${XCMM_STUB_TARGET} ${CODEGEN_TARGET_NAME})
@@ -133,11 +137,11 @@ function(xcmm_generate_interface)
     endif()
 
     if(NOT XCMM_RPC_GEN_SCRIPT)
-        set(XCMM_RPC_GEN_SCRIPT ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../src/XCMinusMinus/genx/rpcgen.py)
+        set(XCMM_RPC_GEN_SCRIPT "${XCMM_ROOT_DIR}/src/XCMinusMinus/genx/rpcgen.py")
     endif()
-    
+
     if(NOT XCMM_TD_INCLUDE_DIR)
-        set(XCMM_TD_INCLUDE_DIR ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../src/XCMinusMinus/support/include)
+        set(XCMM_TD_INCLUDE_DIR "${XCMM_ROOT_DIR}/src/XCMinusMinus/support/include")
     endif()
 
     # 1. Generate JSONs from .td files
@@ -154,3 +158,43 @@ function(xcmm_generate_interface)
         OUT_DIR ${XCMM_INT_STUB_OUT_DIR}
     )
 endfunction()
+
+# Macro to register an XCMM application
+# Wraps XMOS_REGISTER_APP to automatically handle XCMM interface generation
+macro(XMOS_REGISTER_XCMM_APP)
+    # Check if we have source directory override, otherwise default to src
+    if(NOT DEFINED XCMM_SEARCH_DIR)
+        set(XCMM_SEARCH_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    endif()
+
+    # Create a unique target name for the generated code
+    set(XCMM_GEN_TARGET ${PROJECT_NAME}_xcmm_generated)
+
+    if(NOT TARGET ${XCMM_GEN_TARGET})
+        add_library(${XCMM_GEN_TARGET} INTERFACE)
+
+        xcmm_generate_interface(
+            TARGET ${XCMM_GEN_TARGET}
+            SEARCH_DIR ${XCMM_SEARCH_DIR}
+            # We use the binary dir for generated artifacts to avoid polluting source tree
+            STUB_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated
+        )
+
+    endif()
+
+    # Call the underlying XMOS registration
+    XMOS_REGISTER_APP()
+
+    # Automatically link the generated target to all application configurations
+    get_cmake_property(_variableNames VARIABLES)
+    foreach(_variableName ${_variableNames})
+        if(_variableName MATCHES "^APP_COMPILER_FLAGS_(.*)$")
+            set(_configName ${CMAKE_MATCH_1})
+            set(_appTarget ${PROJECT_NAME}_${_configName})
+
+            if(TARGET ${_appTarget})
+                target_link_libraries(${_appTarget} PRIVATE ${XCMM_GEN_TARGET})
+            endif()
+        endif()
+    endforeach()
+endmacro()
